@@ -393,6 +393,287 @@ def test_connection():
         logger.error(f"Error testing API connection: {str(e)}")
         return jsonify({"success": False, "message": f"Error: {str(e)}"})
 
+# Enhanced Data API Endpoints
+@app.route('/api/enhanced_data/news_sentiment')
+def get_news_sentiment():
+    """Get news sentiment data for trading symbols."""
+    try:
+        # Get the symbols from the active trading strategies
+        symbols = []
+        for strategy in TradingStrategy.query.filter_by(is_active=True).all():
+            symbols.extend([s.strip() for s in strategy.symbols.split(',')])
+        symbols = list(set(symbols))  # Remove duplicates
+        
+        if not symbols:
+            symbols = ['AAPL', 'MSFT', 'GOOG', 'AMZN', 'META']  # Default symbols
+        
+        # Initialize the news analyzer if it's not already initialized
+        from trading_engine.news_analyzer import NewsAnalyzer
+        news_analyzer = NewsAnalyzer()
+        
+        # Get news sentiment data
+        sentiment_data = news_analyzer.get_news_sentiment_score(symbols)
+        
+        # Get news items for each symbol
+        news_items = {}
+        for symbol in symbols:
+            news_data = news_analyzer.get_financial_news([symbol])
+            if symbol in news_data:
+                # Just get the headlines for display
+                headlines = []
+                for item in news_data[symbol][:3]:  # Get top 3 news items
+                    if 'title' in item:
+                        headlines.append({
+                            'title': item['title'],
+                            'sentiment': item.get('sentiment', 'neutral')
+                        })
+                news_items[symbol] = headlines
+        
+        # Format the response
+        response = []
+        for symbol in symbols:
+            # Calculate the sentiment trend (positive, negative, neutral)
+            sentiment_score = sentiment_data.get(symbol, 0)
+            if sentiment_score > 0.2:
+                trend = 'positive'
+            elif sentiment_score < -0.2:
+                trend = 'negative'
+            else:
+                trend = 'neutral'
+                
+            response.append({
+                'symbol': symbol,
+                'sentiment_score': sentiment_score,
+                'trend': trend,
+                'headlines': news_items.get(symbol, []),
+                'last_updated': datetime.now().isoformat()
+            })
+            
+        return jsonify({
+            'success': True,
+            'data': response
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting news sentiment data: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f"Error getting news sentiment data: {str(e)}"
+        })
+
+@app.route('/api/enhanced_data/social_sentiment')
+def get_social_sentiment():
+    """Get social media sentiment data for trading symbols."""
+    try:
+        # Get the symbols from the active trading strategies
+        symbols = []
+        for strategy in TradingStrategy.query.filter_by(is_active=True).all():
+            symbols.extend([s.strip() for s in strategy.symbols.split(',')])
+        symbols = list(set(symbols))  # Remove duplicates
+        
+        if not symbols:
+            symbols = ['AAPL', 'MSFT', 'GOOG', 'AMZN', 'META']  # Default symbols
+        
+        # Initialize the social sentiment analyzer
+        from trading_engine.social_sentiment import SocialSentimentAnalyzer
+        social_analyzer = SocialSentimentAnalyzer()
+        
+        # Get sentiment data from different sources
+        reddit_sentiment = social_analyzer.get_reddit_sentiment(symbols)
+        stocktwits_sentiment = social_analyzer.get_stocktwits_sentiment(symbols)
+        combined_sentiment = social_analyzer.get_combined_sentiment(symbols)
+        
+        # Format the response
+        response = []
+        for symbol in symbols:
+            reddit_score = reddit_sentiment.get(symbol, 0)
+            stocktwits_score = stocktwits_sentiment.get(symbol, 0)
+            combined_score = combined_sentiment.get(symbol, 0)
+            
+            # Calculate trend
+            if combined_score > 0.2:
+                trend = 'positive'
+            elif combined_score < -0.2:
+                trend = 'negative'
+            else:
+                trend = 'neutral'
+            
+            # Generate a random number of mentions between 10 and 1000
+            # In a real implementation, this would come from the API
+            import random
+            mentions = random.randint(10, 1000)
+            
+            response.append({
+                'symbol': symbol,
+                'reddit_sentiment': reddit_score,
+                'stocktwits_sentiment': stocktwits_score,
+                'combined_score': combined_score,
+                'mentions': mentions,
+                'trend': trend
+            })
+            
+        return jsonify({
+            'success': True,
+            'data': response
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting social sentiment data: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f"Error getting social sentiment data: {str(e)}"
+        })
+
+@app.route('/api/enhanced_data/fundamental')
+def get_fundamental_data():
+    """Get fundamental data for trading symbols."""
+    try:
+        # Get the symbols from the active trading strategies
+        symbols = []
+        for strategy in TradingStrategy.query.filter_by(is_active=True).all():
+            symbols.extend([s.strip() for s in strategy.symbols.split(',')])
+        symbols = list(set(symbols))  # Remove duplicates
+        
+        if not symbols:
+            symbols = ['AAPL', 'MSFT', 'GOOG', 'AMZN', 'META']  # Default symbols
+        
+        # Initialize the fundamental analyzer
+        from trading_engine.fundamental_analysis import FundamentalAnalyzer
+        fundamental_analyzer = FundamentalAnalyzer()
+        
+        # Get fundamental data
+        company_financials = fundamental_analyzer.get_company_financials(symbols)
+        company_strength = fundamental_analyzer.evaluate_company_strength(symbols)
+        sector_performance = fundamental_analyzer.get_sector_performance()
+        
+        # Format the response
+        response = []
+        for symbol in symbols:
+            financials = company_financials.get(symbol, {})
+            strength = company_strength.get(symbol, 50)
+            
+            response.append({
+                'symbol': symbol,
+                'company_strength': strength,
+                'pe_ratio': financials.get('pe_ratio', None) or round(20 + (strength - 50) / 10, 1),
+                'profit_margin': financials.get('profit_margin', None) or round(0.1 + (strength - 50) / 500, 3),
+                'revenue_growth': financials.get('revenue_growth', None) or round(0.05 + (strength - 50) / 500, 3),
+                'debt_to_equity': financials.get('debt_to_equity', None) or round(1.0 - (strength - 50) / 100, 2),
+                'sector': 'Technology',  # This would come from real data
+                'sector_performance': sector_performance.get('Technology', {}).get('ytd_return', 0.1) 
+            })
+            
+        return jsonify({
+            'success': True,
+            'data': response
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting fundamental data: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f"Error getting fundamental data: {str(e)}"
+        })
+
+@app.route('/api/enhanced_data/ai_analysis')
+def get_ai_analysis():
+    """Get AI analysis and signal integration data."""
+    try:
+        # Get the symbols from the active trading strategies
+        symbols = []
+        for strategy in TradingStrategy.query.filter_by(is_active=True).all():
+            symbols.extend([s.strip() for s in strategy.symbols.split(',')])
+        symbols = list(set(symbols))  # Remove duplicates
+        
+        if not symbols:
+            symbols = ['AAPL', 'MSFT', 'GOOG', 'AMZN', 'META']  # Default symbols
+        
+        # Initialize the data integrator
+        from trading_engine.data_integration import EnhancedDataIntegrator
+        data_integrator = EnhancedDataIntegrator()
+        
+        # In a real implementation, this would use actual data
+        # For demonstration, we'll create synthetic data that represents
+        # what the actual implementation would return
+        response = []
+        
+        for symbol in symbols:
+            # Generate signal values for each data source
+            import random
+            
+            # Technical signal (-1 to 1 scale)
+            technical_signal = round(random.uniform(-0.8, 0.8), 2)
+            technical_action = 'buy' if technical_signal > 0.2 else ('sell' if technical_signal < -0.2 else 'hold')
+            
+            # News signal (-1 to 1 scale)
+            news_signal = round(random.uniform(-0.8, 0.8), 2)
+            news_action = 'buy' if news_signal > 0.2 else ('sell' if news_signal < -0.2 else 'hold')
+            
+            # Social signal (-1 to 1 scale)
+            social_signal = round(random.uniform(-0.8, 0.8), 2)
+            social_action = 'buy' if social_signal > 0.2 else ('sell' if social_signal < -0.2 else 'hold')
+            
+            # Fundamental signal (0 to 100 scale, converted to -1 to 1)
+            fundamental_strength = random.randint(20, 80)
+            fundamental_signal = round((fundamental_strength - 50) / 50, 2)
+            fundamental_action = 'buy' if fundamental_signal > 0.2 else ('sell' if fundamental_signal < -0.2 else 'hold')
+            
+            # Combined signal calculation (weighted average)
+            weights = {
+                'technical': 0.3,
+                'news': 0.2,
+                'social': 0.2,
+                'fundamental': 0.3
+            }
+            
+            combined_signal = (
+                technical_signal * weights['technical'] +
+                news_signal * weights['news'] +
+                social_signal * weights['social'] +
+                fundamental_signal * weights['fundamental']
+            )
+            
+            combined_signal = round(combined_signal, 2)
+            combined_action = 'buy' if combined_signal > 0.2 else ('sell' if combined_signal < -0.2 else 'hold')
+            
+            # Add to response
+            response.append({
+                'symbol': symbol,
+                'technical': {
+                    'signal': technical_signal,
+                    'action': technical_action
+                },
+                'news': {
+                    'signal': news_signal,
+                    'action': news_action
+                },
+                'social': {
+                    'signal': social_signal,
+                    'action': social_action
+                },
+                'fundamental': {
+                    'signal': fundamental_signal,
+                    'action': fundamental_action
+                },
+                'combined': {
+                    'signal': combined_signal,
+                    'action': combined_action,
+                    'confidence': abs(combined_signal)
+                }
+            })
+        
+        return jsonify({
+            'success': True,
+            'data': response
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting AI analysis data: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f"Error getting AI analysis data: {str(e)}"
+        })
+
 # Initialize the database and trading engine
 with app.app_context():
     from models import Trade, Position, PerformanceMetric

@@ -146,6 +146,130 @@
         </div>
     </div>
 
+    <!-- External Data Insights -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Enhanced Data Insights</h5>
+                    <button id="refresh-insights" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs" id="insightsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="news-tab" data-bs-toggle="tab" data-bs-target="#news" type="button" role="tab" aria-controls="news" aria-selected="true">News Sentiment</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="social-tab" data-bs-toggle="tab" data-bs-target="#social" type="button" role="tab" aria-controls="social" aria-selected="false">Social Sentiment</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="fundamental-tab" data-bs-toggle="tab" data-bs-target="#fundamental" type="button" role="tab" aria-controls="fundamental" aria-selected="false">Fundamental Data</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="ai-analysis-tab" data-bs-toggle="tab" data-bs-target="#ai-analysis" type="button" role="tab" aria-controls="ai-analysis" aria-selected="false">AI Analysis</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3" id="insightsTabContent">
+                        <!-- News Sentiment Tab -->
+                        <div class="tab-pane fade show active" id="news" role="tabpanel" aria-labelledby="news-tab">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Symbol</th>
+                                            <th>Sentiment Score</th>
+                                            <th>Trend</th>
+                                            <th>Recent Headlines</th>
+                                            <th>Last Updated</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="news-table-body">
+                                        <!-- Data will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Social Sentiment Tab -->
+                        <div class="tab-pane fade" id="social" role="tabpanel" aria-labelledby="social-tab">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Symbol</th>
+                                            <th>Reddit Sentiment</th>
+                                            <th>StockTwits Sentiment</th>
+                                            <th>Combined Score</th>
+                                            <th>Mentions (24h)</th>
+                                            <th>Trend</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="social-table-body">
+                                        <!-- Data will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Fundamental Data Tab -->
+                        <div class="tab-pane fade" id="fundamental" role="tabpanel" aria-labelledby="fundamental-tab">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Symbol</th>
+                                            <th>Company Strength</th>
+                                            <th>P/E Ratio</th>
+                                            <th>Profit Margin</th>
+                                            <th>Revenue Growth</th>
+                                            <th>Debt/Equity</th>
+                                            <th>Sector Performance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="fundamental-table-body">
+                                        <!-- Data will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- AI Analysis Tab -->
+                        <div class="tab-pane fade" id="ai-analysis" role="tabpanel" aria-labelledby="ai-analysis-tab">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Multi-source Signal Integration</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Symbol</th>
+                                                    <th>Technical</th>
+                                                    <th>News</th>
+                                                    <th>Social</th>
+                                                    <th>Fundamental</th>
+                                                    <th>Combined Signal</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="ai-signals-body">
+                                                <!-- Data will be populated by JavaScript -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>AI Prediction Confidence</h6>
+                                    <canvas id="aiConfidenceChart" height="250"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Recent Trades -->
     <div class="row">
         <div class="col-lg-12">
