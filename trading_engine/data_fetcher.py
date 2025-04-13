@@ -12,7 +12,7 @@ class AlpacaDataFetcher:
     Handles fetching market data from Alpaca API
     """
     
-    def __init__(self, api_key, api_secret, base_url, data_source='iex'):
+    def __init__(self, api_key, api_secret, base_url):
         """
         Initialize the data fetcher with API credentials
         
@@ -20,12 +20,10 @@ class AlpacaDataFetcher:
             api_key (str): Alpaca API key
             api_secret (str): Alpaca API secret
             base_url (str): Alpaca API base URL (paper or live)
-            data_source (str): Market data source ('iex' or 'sip')
         """
         self.api_key = api_key
         self.api_secret = api_secret
         self.base_url = base_url
-        self.data_source = data_source
         
         try:
             self.api = tradeapi.REST(
@@ -95,16 +93,15 @@ class AlpacaDataFetcher:
         
         for symbol in symbols:
             try:
-                # Use specific data source based on configuration
-                df = self.api.get_bars(
+                # Use Alpaca's latest Market Data API with default data (no feed parameter)
+                barset = self.api.get_bars(
                     symbol,
                     timeframe,
                     start=start_date,
                     end=end_date,
-                    limit=limit,
-                    adjustment='raw',  # Use raw data (not adjusted for splits)
-                    feed=self.data_source  # Use configured data source (iex or sip)
-                ).df
+                    limit=limit
+                )
+                df = barset.df
                 
                 if not df.empty:
                     # Add technical indicators

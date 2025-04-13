@@ -52,13 +52,12 @@ def init_trading_engine():
     api_key = os.environ.get("ALPACA_API_KEY")
     api_secret = os.environ.get("ALPACA_API_SECRET")
     base_url = os.environ.get("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")  # Default to paper trading
-    data_source = os.environ.get("ALPACA_DATA_SOURCE", "iex")  # Default to IEX (free tier)
     
     if not api_key or not api_secret:
         logger.warning("Alpaca API credentials not found. Trading engine will be initialized but not active.")
         
     # Initialize components
-    data_fetcher = AlpacaDataFetcher(api_key, api_secret, base_url, data_source=data_source)
+    data_fetcher = AlpacaDataFetcher(api_key, api_secret, base_url)
     ml_model = MLModel()
     risk_manager = RiskManager()
     trade_executor = TradeExecutor(api_key, api_secret, base_url)
@@ -294,7 +293,7 @@ def api_config():
             api_key = request.form.get('api_key', '').strip()
             api_secret = request.form.get('api_secret', '').strip()
             api_base_url = request.form.get('api_base_url')
-            data_source = request.form.get('data_source', 'iex')  # Default to IEX (free tier)
+            market_type = request.form.get('market_type', 'stock')  # Default to US stocks
             
             # Save API credentials if provided
             if api_key and api_secret:
@@ -303,7 +302,7 @@ def api_config():
                 os.environ['ALPACA_API_KEY'] = api_key
                 os.environ['ALPACA_API_SECRET'] = api_secret
                 os.environ['ALPACA_BASE_URL'] = api_base_url
-                os.environ['ALPACA_DATA_SOURCE'] = data_source
+                os.environ['ALPACA_MARKET_TYPE'] = market_type
                 
                 # Reinitialize the trading engine with new credentials
                 try:
@@ -325,7 +324,7 @@ def api_config():
     api_key = os.environ.get('ALPACA_API_KEY', '')
     api_secret = os.environ.get('ALPACA_API_SECRET', '')
     api_base_url = os.environ.get('ALPACA_BASE_URL', 'https://paper-api.alpaca.markets')
-    data_source = os.environ.get('ALPACA_DATA_SOURCE', 'iex')
+    market_type = os.environ.get('ALPACA_MARKET_TYPE', 'stock')
     
     # Get account info if available
     account_info = None
@@ -334,10 +333,10 @@ def api_config():
     if trade_executor:
         try:
             account_info = trade_executor.get_account()
-            # Subscription info might be available depending on Alpaca API version
+            # Show subscription info
             subscription_info = {
-                'plan': 'Free Tier',  # Default for paper trading
-                'data_subscriptions': data_source.upper()
+                'plan': 'Standard',  # Alpaca now provides real-time data
+                'market_type': market_type.capitalize()
             }
         except Exception as e:
             logger.error(f"Error fetching account info: {str(e)}")
@@ -347,7 +346,7 @@ def api_config():
         api_key=api_key,
         api_secret=api_secret,
         api_base_url=api_base_url,
-        data_source=data_source,
+        market_type=market_type,
         account_info=account_info,
         subscription_info=subscription_info
     )

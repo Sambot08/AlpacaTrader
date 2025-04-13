@@ -45,12 +45,12 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="data_source" class="form-label">Market Data Source</label>
-                        <select class="form-select" id="data_source" name="data_source">
-                            <option value="iex" {% if data_source == 'iex' %}selected{% endif %}>IEX (Free, 15-min delayed data)</option>
-                            <option value="sip" {% if data_source == 'sip' %}selected{% endif %}>SIP (Premium, real-time data)</option>
+                        <label for="market_type" class="form-label">Market Type</label>
+                        <select class="form-select" id="market_type" name="market_type">
+                            <option value="stock" selected>US Stocks & ETFs</option>
+                            <option value="crypto">Cryptocurrency</option>
                         </select>
-                        <div class="form-text">Choose your market data source based on your Alpaca subscription</div>
+                        <div class="form-text">Select the type of market data you want to trade</div>
                     </div>
                     
                     <div class="d-grid gap-2 mb-3">
@@ -120,11 +120,11 @@
                         <table class="table table-sm">
                             <tr>
                                 <th>Plan</th>
-                                <td>{{ subscription_info.plan | default('Free') }}</td>
+                                <td>{{ subscription_info.plan | default('Standard') }}</td>
                             </tr>
                             <tr>
-                                <th>Data Subscriptions</th>
-                                <td>{{ subscription_info.data_subscriptions | default('None') }}</td>
+                                <th>Market Type</th>
+                                <td>{{ subscription_info.market_type | default('Stock') }}</td>
                             </tr>
                         </table>
                     </div>
