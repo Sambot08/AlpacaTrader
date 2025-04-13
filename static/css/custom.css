@@ -1,104 +1,114 @@
-/* Custom styles for AI Trading System */
+/* Custom CSS to supplement Bootstrap */
 
-/* Card styles */
-.card {
-    border: none;
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-    margin-bottom: 1.5rem;
+/* Main layout */
+body {
+    padding-top: 60px;
 }
 
-.card-header {
-    background-color: rgba(0, 0, 0, 0.15);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 0.75rem 1.25rem;
+/* Dashboard cards */
+.dashboard-card {
+    height: 100%;
+    transition: all 0.3s ease;
 }
 
-/* Border left cards for summary stats */
-.border-left-primary {
-    border-left: 0.25rem solid var(--bs-primary) !important;
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
 
-.border-left-success {
-    border-left: 0.25rem solid var(--bs-success) !important;
+/* Status indicators */
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
 }
 
-.border-left-info {
-    border-left: 0.25rem solid var(--bs-info) !important;
+.status-active {
+    background-color: var(--bs-success);
 }
 
-.border-left-warning {
-    border-left: 0.25rem solid var(--bs-warning) !important;
+.status-inactive {
+    background-color: var(--bs-danger);
 }
 
-.border-left-danger {
-    border-left: 0.25rem solid var(--bs-danger) !important;
+.status-warning {
+    background-color: var(--bs-warning);
 }
 
-/* Feature icons */
-.feature-icon {
-    display: inline-flex;
-    align-items: center;
+/* Trading positions */
+.position-profit {
+    color: var(--bs-success);
+}
+
+.position-loss {
+    color: var(--bs-danger);
+}
+
+/* Trade history table */
+.trade-buy {
+    border-left: 4px solid var(--bs-success);
+}
+
+.trade-sell {
+    border-left: 4px solid var(--bs-danger);
+}
+
+/* Performance metrics */
+.metric-card {
+    text-align: center;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.metric-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+/* Charts */
+.chart-container {
+    height: 300px;
+    width: 100%;
+}
+
+/* Settings form */
+.settings-section {
+    margin-bottom: 30px;
+}
+
+/* Symbol list for trading */
+.symbol-badge {
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+/* Loading spinner */
+.spinner-container {
+    display: flex;
     justify-content: center;
-    width: 4rem;
-    height: 4rem;
-    border-radius: 0.5rem;
+    align-items: center;
+    height: 100px;
 }
 
-/* Navbar customization */
-.navbar {
-    padding: 0.5rem 1rem;
-    box-shadow: 0 0.125rem 0.25rem 0 rgba(58, 59, 69, 0.2);
+/* Tooltip enhancements */
+.tooltip-inner {
+    max-width: 300px;
 }
 
-.navbar-brand {
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-/* Strategy list */
-.strategy-list .list-group-item {
-    border-color: rgba(255, 255, 255, 0.05);
-    background-color: rgba(0, 0, 0, 0.1);
-}
-
-.strategy-list .list-group-item:hover {
-    background-color: rgba(0, 0, 0, 0.2);
-}
-
-/* Metric items in cards */
-.metric-item {
-    padding: 0.5rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.metric-item:last-child {
-    border-bottom: none;
-}
-
-/* Table customization */
-.table {
-    margin-bottom: 0;
-}
-
-.table-hover tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-}
-
-/* Chart container */
-canvas {
-    max-width: 100%;
-}
-
-/* Responsive adjustments */
+/* Responsive tweaks */
 @media (max-width: 768px) {
-    .display-4 {
-        font-size: 2rem;
+    .metric-value {
+        font-size: 1.4rem;
     }
     
-    .feature-icon {
-        width: 3rem;
-        height: 3rem;
+    .chart-container {
+        height: 200px;
     }
 }

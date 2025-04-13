@@ -1,0 +1,155 @@
+{% extends "layout.html" %}
+
+{% block title %}Performance{% endblock %}
+
+{% block page_header %}Performance Analysis{% endblock %}
+
+{% block content %}
+{% if performance_data %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card dashboard-card">
+            <div class="card-body">
+                <h5 class="card-title">Portfolio Value</h5>
+                <p class="metric-value">${{ "%.2f"|format(performance_data.portfolio_value) }}</p>
+                <p class="metric-label">Total Assets</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card dashboard-card">
+            <div class="card-body">
+                <h5 class="card-title">Total P&L</h5>
+                <p class="metric-value {% if performance_data.total_pnl > 0 %}position-profit{% elif performance_data.total_pnl < 0 %}position-loss{% endif %}">
+                    ${{ "%.2f"|format(performance_data.total_pnl) }}
+                    ({{ "%.2f"|format(performance_data.total_pnl_pct) }}%)
+                </p>
+                <p class="metric-label">Profit/Loss</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card dashboard-card">
+            <div class="card-body">
+                <h5 class="card-title">Win Rate</h5>
+                <p class="metric-value">{{ "%.1f"|format(performance_data.win_rate) }}%</p>
+                <p class="metric-label">Success Rate</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card dashboard-card">
+            <div class="card-body">
+                <h5 class="card-title">Sharpe Ratio</h5>
+                <p class="metric-value">{{ "%.2f"|format(performance_data.sharpe_ratio) }}</p>
+                <p class="metric-label">Risk-Adjusted Return</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Portfolio History</h5>
+            </div>
+            <div class="card-body">
+                {% if performance_data.portfolio_history %}
+                <img src="data:image/png;base64,{{ performance_data.portfolio_history }}" alt="Portfolio History" class="img-fluid">
+                {% else %}
+                <p class="text-center">No portfolio history data available</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Daily Returns</h5>
+            </div>
+            <div class="card-body">
+                {% if performance_data.returns_history %}
+                <img src="data:image/png;base64,{{ performance_data.returns_history }}" alt="Daily Returns" class="img-fluid">
+                {% else %}
+                <p class="text-center">No daily returns data available</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Trading Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <p><strong>Total Trades:</strong> {{ performance_data.total_trades }}</p>
+                        <p><strong>Winning Trades:</strong> {{ performance_data.winning_trades }}</p>
+                        <p><strong>Losing Trades:</strong> {{ performance_data.losing_trades }}</p>
+                        <p><strong>Average Win:</strong> ${{ "%.2f"|format(performance_data.avg_win) }}</p>
+                    </div>
+                    <div class="col-6">
+                        <p><strong>Average Loss:</strong> ${{ "%.2f"|format(performance_data.avg_loss) }}</p>
+                        <p><strong>Profit Factor:</strong> {{ "%.2f"|format(performance_data.profit_factor) }}</p>
+                        <p><strong>Max Drawdown:</strong> ${{ "%.2f"|format(performance_data.max_drawdown) }}</p>
+                        <p><strong>Max Drawdown %:</strong> {{ "%.2f"|format(performance_data.max_drawdown_pct) }}%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Recent Daily Returns</h5>
+            </div>
+            <div class="card-body">
+                {% if performance_data.daily_returns %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Portfolio Value</th>
+                                <th>Daily Return</th>
+                                <th>Return %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for return in performance_data.daily_returns[:10] %}
+                            <tr>
+                                <td>{{ return.date.split('T')[0] }}</td>
+                                <td>${{ "%.2f"|format(return.portfolio_value) }}</td>
+                                <td class="{% if return.daily_return > 0 %}position-profit{% elif return.daily_return < 0 %}position-loss{% endif %}">
+                                    ${{ "%.2f"|format(return.daily_return) }}
+                                </td>
+                                <td class="{% if return.daily_return_pct > 0 %}position-profit{% elif return.daily_return_pct < 0 %}position-loss{% endif %}">
+                                    {{ "%.2f"|format(return.daily_return_pct) }}%
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-center">No daily returns data available</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="alert alert-info" role="alert">
+    <h4 class="alert-heading">No Performance Data Available</h4>
+    <p>There is no trading performance data available yet. Start trading or check back later.</p>
+</div>
+{% endif %}
+{% endblock %}

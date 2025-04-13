@@ -1,322 +1,216 @@
+// Algorithmic Trading Dashboard JavaScript
+
+// DOM elements
+let tradingToggle = document.getElementById('trading-toggle');
+let symbolsForm = document.getElementById('symbols-form');
+let symbolsInput = document.getElementById('symbols-input');
+let accountInfoElement = document.getElementById('account-info');
+let portfolioTableBody = document.getElementById('portfolio-table-body');
+let tradesTableBody = document.getElementById('trades-table-body');
+let statusIndicator = document.getElementById('status-indicator');
+let statusText = document.getElementById('status-text');
+let alertsContainer = document.getElementById('alerts-container');
+
+// Initialize tooltips and popovers
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize charts and data
-    initializeDashboard();
+    // Enable Bootstrap tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+  
+    // Enable Bootstrap popovers
+    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+    popoverTriggerList.map(function(popoverTriggerEl) {
+        return new bootstrap.Popover(popoverTriggerEl);
+    });
     
-    // Set up event listeners
-    setupEventListeners();
+    // Set up auto-refresh
+    setupAutoRefresh();
 });
 
-// Chart objects
-let portfolioChart = null;
-
-// Initialize the dashboard
-function initializeDashboard() {
-    // Load initial data
-    loadPerformanceData();
-    loadRecentTrades();
-    
-    // Refresh data every 5 minutes
-    setInterval(function() {
-        loadPerformanceData();
-        loadRecentTrades();
-    }, 300000); // 5 minutes
-}
-
-// Load performance data and update charts/metrics
-function loadPerformanceData(days = 30) {
-    fetch(`/api/performance_data?days=${days}`)
+// Trading toggle functionality
+if (tradingToggle) {
+    tradingToggle.addEventListener('change', function() {
+        const isActive = this.checked;
+        const endpoint = isActive ? '/api/start_trading' : '/api/stop_trading';
+        
+        // Show loading state
+        this.disabled = true;
+        
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
         .then(response => response.json())
-        .then(response => {
-            if (response.success) {
-                updatePerformanceCharts(response.data);
-                updateMetrics(response.data);
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                updateTradingStatus(isActive);
             } else {
-                console.error('Error loading performance data:', response.message);
+                showAlert(data.message, 'danger');
+                // Revert toggle state
+                this.checked = !isActive;
             }
         })
         .catch(error => {
-            console.error('Error fetching performance data:', error);
-        });
-}
-
-// Load recent trades
-function loadRecentTrades() {
-    fetch('/api/recent_trades?limit=10')
-        .then(response => response.json())
-        .then(response => {
-            if (response.success) {
-                updateTradesTable(response.trades);
-            } else {
-                console.error('Error loading recent trades:', response.message);
-            }
+            console.error('Error:', error);
+            showAlert('An error occurred: ' + error, 'danger');
+            // Revert toggle state
+            this.checked = !isActive;
         })
-        .catch(error => {
-            console.error('Error fetching recent trades:', error);
+        .finally(() => {
+            this.disabled = false;
         });
+    });
 }
 
-// Update the performance charts
-function updatePerformanceCharts(data) {
-    const ctx = document.getElementById('portfolioChart').getContext('2d');
-    
-    // Destroy existing chart if it exists
-    if (portfolioChart) {
-        portfolioChart.destroy();
-    }
-    
-    // Create new chart
-    portfolioChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: data.dates,
-            datasets: [
-                {
-                    label: 'Portfolio Value ($)',
-                    data: data.portfolio_values,
-                    borderColor: 'rgba(78, 115, 223, 1)',
-                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
-                    borderWidth: 2,
-                    pointRadius: 3,
-                    pointBackgroundColor: 'rgba(78, 115, 223, 1)',
-                    pointBorderColor: 'rgba(78, 115, 223, 1)',
-                    pointHoverRadius: 5,
-                    pointHoverBackgroundColor: 'rgba(78, 115, 223, 1)',
-                    pointHoverBorderColor: 'rgba(78, 115, 223, 1)',
-                    pointHitRadius: 10,
-                    fill: true,
-                    tension: 0.4
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    grid: {
-                        display: false
-                    }
-                },
-                y: {
-                    beginAtZero: false,
-                    ticks: {
-                        callback: function(value) {
-                            return '$' + value.toLocaleString();
-                        }
-                    }
-                }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            if (context.parsed.y !== null) {
-                                label += '$' + context.parsed.y.toLocaleString(undefined, {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2
-                                });
-                            }
-                            return label;
-                        }
-                    }
-                }
-            }
-        }
-    });
-    
-    // Update summary metrics if we have data
-    if (data.portfolio_values.length > 0) {
-        const latestValue = data.portfolio_values[data.portfolio_values.length - 1];
-        document.getElementById('portfolio-value').innerText = '$' + latestValue.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
+// Symbol management form
+if (symbolsForm) {
+    symbolsForm.addEventListener('submit', function(e) {
+        e.preventDefault();
         
-        // Calculate daily return
-        if (data.returns.length > 0) {
-            const latestReturn = data.returns[data.returns.length - 1];
-            const returnEl = document.getElementById('daily-return');
-            returnEl.innerText = latestReturn.toFixed(2) + '%';
+        const symbolsText = symbolsInput.value.trim();
+        if (!symbolsText) {
+            showAlert('Please enter at least one symbol', 'warning');
+            return;
+        }
+        
+        // Parse symbols
+        const symbols = symbolsText.split(',')
+            .map(s => s.trim().toUpperCase())
+            .filter(s => s.length > 0);
             
-            // Color based on positive/negative
-            if (latestReturn > 0) {
-                returnEl.classList.add('text-success');
-                returnEl.classList.remove('text-danger');
-            } else if (latestReturn < 0) {
-                returnEl.classList.add('text-danger');
-                returnEl.classList.remove('text-success');
-            }
-        }
-    }
-}
-
-// Update metrics display
-function updateMetrics(data) {
-    // These would typically come from performance metrics API
-    // For now, we'll calculate some based on the chart data
-    
-    // Calculate a simple Sharpe ratio (estimate)
-    if (data.returns && data.returns.length > 0) {
-        const returns = data.returns;
-        const avgReturn = returns.reduce((sum, ret) => sum + ret, 0) / returns.length;
-        const stdDev = Math.sqrt(returns.reduce((sum, ret) => sum + Math.pow(ret - avgReturn, 2), 0) / returns.length);
-        const sharpeRatio = (stdDev === 0) ? 0 : (avgReturn / stdDev) * Math.sqrt(252); // Annualized
-        
-        document.getElementById('sharpe-ratio').innerText = sharpeRatio.toFixed(2);
-        
-        // Calculate simple win rate (positive return days)
-        const winCount = returns.filter(ret => ret > 0).length;
-        const winRate = (winCount / returns.length) * 100;
-        document.getElementById('win-rate').innerText = winRate.toFixed(2) + '%';
-        
-        // Calculate max drawdown
-        let peak = data.portfolio_values[0];
-        let maxDrawdown = 0;
-        
-        for (let i = 1; i < data.portfolio_values.length; i++) {
-            const value = data.portfolio_values[i];
-            if (value > peak) {
-                peak = value;
-            } else {
-                const drawdown = (peak - value) / peak * 100;
-                if (drawdown > maxDrawdown) {
-                    maxDrawdown = drawdown;
-                }
-            }
+        if (symbols.length === 0) {
+            showAlert('Please enter valid symbols', 'warning');
+            return;
         }
         
-        document.getElementById('max-drawdown').innerText = maxDrawdown.toFixed(2) + '%';
-        
-        // Profit factor (total gain / total loss)
-        const gains = returns.filter(ret => ret > 0).reduce((sum, ret) => sum + ret, 0);
-        const losses = Math.abs(returns.filter(ret => ret < 0).reduce((sum, ret) => sum + ret, 0));
-        const profitFactor = losses === 0 ? gains : gains / losses;
-        document.getElementById('profit-factor').innerText = profitFactor.toFixed(2);
-        
-        // Average trade return
-        document.getElementById('avg-trade-return').innerText = avgReturn.toFixed(2) + '%';
-        
-        // Total trades
-        document.getElementById('total-trades').innerText = returns.length;
-    }
-}
-
-// Update the trades table
-function updateTradesTable(trades) {
-    const tableBody = document.getElementById('trades-table-body');
-    
-    // Clear existing rows
-    tableBody.innerHTML = '';
-    
-    // Add new rows
-    trades.forEach(trade => {
-        const row = document.createElement('tr');
-        
-        // Format the row
-        row.innerHTML = `
-            <td>${trade.symbol}</td>
-            <td>
-                <span class="badge ${trade.action === 'BUY' ? 'bg-success' : 'bg-danger'}">
-                    ${trade.action}
-                </span>
-            </td>
-            <td>${trade.quantity}</td>
-            <td>$${trade.price.toFixed(2)}</td>
-            <td>$${(trade.price * trade.quantity).toFixed(2)}</td>
-            <td>${trade.timestamp}</td>
-            <td><span class="badge bg-info">${trade.status || 'FILLED'}</span></td>
-        `;
-        
-        tableBody.appendChild(row);
+        // Update symbols
+        updateSymbols(symbols);
     });
 }
 
-// Setup event listeners
-function setupEventListeners() {
-    // Time period buttons
-    const periodButtons = document.querySelectorAll('[data-period]');
-    periodButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // Update active state
-            periodButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Load data for selected period
-            const period = parseInt(this.getAttribute('data-period'));
-            loadPerformanceData(period);
-        });
-    });
-    
-    // Refresh trades button
-    const refreshButton = document.getElementById('refresh-trades');
-    if (refreshButton) {
-        refreshButton.addEventListener('click', function() {
-            loadRecentTrades();
-        });
-    }
-    
-    // Start/stop strategy buttons
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.start-strategy')) {
-            const button = e.target.closest('.start-strategy');
-            const strategyId = button.getAttribute('data-strategy-id');
-            startStrategy(strategyId);
-        } else if (e.target.closest('.stop-strategy')) {
-            const button = e.target.closest('.stop-strategy');
-            const strategyId = button.getAttribute('data-strategy-id');
-            stopStrategy(strategyId);
-        }
-    });
-}
-
-// Start a trading strategy
-function startStrategy(strategyId) {
-    fetch('/api/start_trading', {
+// Update trading symbols
+function updateSymbols(symbols) {
+    fetch('/api/update_symbols', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ strategy_id: strategyId })
+        body: JSON.stringify({ symbols: symbols })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Reload the page to reflect changes
-            window.location.reload();
+            showAlert(data.message, 'success');
+            // Update UI if needed
         } else {
-            alert('Error starting strategy: ' + data.message);
+            showAlert(data.message, 'danger');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error starting strategy');
+        showAlert('An error occurred: ' + error, 'danger');
     });
 }
 
-// Stop a trading strategy
-function stopStrategy(strategyId) {
-    fetch('/api/stop_trading', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ strategy_id: strategyId })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Reload the page to reflect changes
-            window.location.reload();
-        } else {
-            alert('Error stopping strategy: ' + data.message);
+// Fetch account info for dashboard
+function fetchAccountInfo() {
+    if (!accountInfoElement) return;
+    
+    fetch('/api/account_info')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.account) {
+                updateAccountInfo(data.account);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching account info:', error);
+        });
+}
+
+// Update account info in dashboard
+function updateAccountInfo(account) {
+    if (!accountInfoElement) return;
+    
+    let html = `
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Portfolio Value:</strong> $${parseFloat(account.portfolio_value).toFixed(2)}</p>
+                <p><strong>Cash Balance:</strong> $${parseFloat(account.cash).toFixed(2)}</p>
+                <p><strong>Buying Power:</strong> $${parseFloat(account.buying_power).toFixed(2)}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Account Status:</strong> ${account.status}</p>
+                <p><strong>Day Trades:</strong> ${account.daytrade_count}</p>
+                <p><strong>Last Equity:</strong> $${parseFloat(account.last_equity).toFixed(2)}</p>
+            </div>
+        </div>
+    `;
+    
+    accountInfoElement.innerHTML = html;
+}
+
+// Update trading status indicator
+function updateTradingStatus(isActive) {
+    if (!statusIndicator || !statusText) return;
+    
+    if (isActive) {
+        statusIndicator.classList.remove('status-inactive');
+        statusIndicator.classList.add('status-active');
+        statusText.textContent = 'Active';
+    } else {
+        statusIndicator.classList.remove('status-active');
+        statusIndicator.classList.add('status-inactive');
+        statusText.textContent = 'Inactive';
+    }
+}
+
+// Format number as currency
+function formatCurrency(value) {
+    const num = parseFloat(value);
+    return '$' + num.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+}
+
+// Format number as percentage
+function formatPercentage(value) {
+    const num = parseFloat(value);
+    return num.toFixed(2) + '%';
+}
+
+// Display alert message
+function showAlert(message, type = 'info') {
+    if (!alertsContainer) return;
+    
+    const alertId = 'alert-' + Date.now();
+    const alertHtml = `
+        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    alertsContainer.innerHTML += alertHtml;
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alertElement = document.getElementById(alertId);
+        if (alertElement) {
+            const bsAlert = new bootstrap.Alert(alertElement);
+            bsAlert.close();
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error stopping strategy');
-    });
+    }, 5000);
+}
+
+// Setup auto-refresh for dashboard data
+function setupAutoRefresh() {
+    // Initial fetch
+    fetchAccountInfo();
+    
+    // Refresh every 30 seconds
+    setInterval(fetchAccountInfo, 30000);
 }
