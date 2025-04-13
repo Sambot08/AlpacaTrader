@@ -93,13 +93,15 @@ class AlpacaDataFetcher:
         
         for symbol in symbols:
             try:
-                # Use Alpaca's latest Market Data API with default data (no feed parameter)
+                # Explicitly specify the 'sip' feed to fix the error
+                # The Alpaca Python SDK requires this parameter
                 barset = self.api.get_bars(
                     symbol,
                     timeframe,
                     start=start_date,
                     end=end_date,
-                    limit=limit
+                    limit=limit,
+                    feed='iex'  # Use the IEX feed which is available to all accounts
                 )
                 df = barset.df
                 
@@ -128,7 +130,7 @@ class AlpacaDataFetcher:
         
         for symbol in symbols:
             try:
-                quote = self.api.get_latest_quote(symbol)
+                quote = self.api.get_latest_quote(symbol, feed='iex')
                 result[symbol] = {
                     'bid': quote.bp,
                     'ask': quote.ap,
@@ -155,7 +157,7 @@ class AlpacaDataFetcher:
         
         for symbol in symbols:
             try:
-                bars = self.api.get_latest_bar(symbol)
+                bars = self.api.get_latest_bar(symbol, feed='iex')
                 result[symbol] = {
                     'open': bars.o,
                     'high': bars.h,
