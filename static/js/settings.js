@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupStrategyFormEvents();
     setupAPIFormEvents();
     setupStrategyListEvents();
+    setupTestConnectionButton();
 });
 
 function setupStrategyFormEvents() {
@@ -16,29 +17,7 @@ function setupStrategyFormEvents() {
 }
 
 function setupAPIFormEvents() {
-    const apiForm = document.getElementById('api-form');
-    
-    if (apiForm) {
-        apiForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const apiKey = document.getElementById('api_key').value;
-            const apiSecret = document.getElementById('api_secret').value;
-            const paperTrading = document.getElementById('paper_trading').checked;
-            
-            if (!apiKey || !apiSecret) {
-                alert('Please enter your Alpaca API key and secret.');
-                return;
-            }
-            
-            // In a real application, you would save these credentials securely
-            // Here we'll just show a confirmation message
-            alert('API settings saved successfully!');
-            
-            // Clear the form
-            apiForm.reset();
-        });
-    }
+    // This is handled by the main form submit now
 }
 
 function setupStrategyListEvents() {
@@ -90,4 +69,56 @@ function setupStrategyListEvents() {
             }
         });
     });
+}
+
+function setupTestConnectionButton() {
+    const testButton = document.getElementById('test_connection');
+    const connectionStatus = document.getElementById('connection_status');
+    
+    if (testButton && connectionStatus) {
+        testButton.addEventListener('click', function() {
+            const apiKey = document.getElementById('api_key').value.trim();
+            const apiSecret = document.getElementById('api_secret').value.trim();
+            const apiBaseUrl = document.getElementById('api_base_url').value;
+            
+            if (!apiKey || !apiSecret) {
+                connectionStatus.className = 'alert alert-danger';
+                connectionStatus.textContent = 'Please enter your API key and secret first.';
+                connectionStatus.classList.remove('d-none');
+                return;
+            }
+            
+            // Show checking status
+            connectionStatus.className = 'alert alert-info';
+            connectionStatus.textContent = 'Testing connection to Alpaca API...';
+            connectionStatus.classList.remove('d-none');
+            
+            // Send request to test the connection
+            fetch('/api/test_connection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    api_key: apiKey,
+                    api_secret: apiSecret,
+                    api_base_url: apiBaseUrl
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    connectionStatus.className = 'alert alert-success';
+                    connectionStatus.innerHTML = `<strong>Success!</strong> Connected to Alpaca API.<br>Account: ${data.account.account_number}<br>Cash Balance: $${parseFloat(data.account.cash).toFixed(2)}<br>Portfolio Value: $${parseFloat(data.account.portfolio_value).toFixed(2)}`;
+                } else {
+                    connectionStatus.className = 'alert alert-danger';
+                    connectionStatus.textContent = `Connection failed: ${data.message}`;
+                }
+            })
+            .catch(error => {
+                connectionStatus.className = 'alert alert-danger';
+                connectionStatus.textContent = `Error testing connection: ${error.message}`;
+            });
+        });
+    }
 }

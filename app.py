@@ -146,6 +146,27 @@ def settings():
             stop_loss_pct = float(request.form.get('stop_loss_pct', 0.02))
             take_profit_pct = float(request.form.get('take_profit_pct', 0.05))
             
+            # Update API credentials
+            api_key = request.form.get('api_key', '').strip()
+            api_secret = request.form.get('api_secret', '').strip()
+            api_base_url = request.form.get('api_base_url')
+            
+            # Save API credentials if provided
+            if api_key and api_secret:
+                # In a production app, use a secure method to store credentials
+                # For now, we'll store them in environment variables
+                os.environ['ALPACA_API_KEY'] = api_key
+                os.environ['ALPACA_API_SECRET'] = api_secret
+                os.environ['ALPACA_BASE_URL'] = api_base_url
+                
+                # Reinitialize the trading engine with new credentials
+                try:
+                    trading_strategy = init_trading_engine()
+                    flash("API credentials updated and trading engine reinitialized!", "success")
+                except Exception as e:
+                    flash(f"Error reinitializing trading engine: {str(e)}", "danger")
+            
+            # Update risk parameters if engine is initialized
             if risk_manager:
                 risk_manager.update_parameters(
                     max_position_size=max_position_size,
@@ -167,10 +188,32 @@ def settings():
     if risk_manager:
         risk_params = risk_manager.get_parameters()
     
+    # Get current API settings
+    api_key = os.environ.get('ALPACA_API_KEY', '')
+    api_secret = os.environ.get('ALPACA_API_SECRET', '')
+    api_base_url = os.environ.get('ALPACA_BASE_URL', 'https://paper-api.alpaca.markets')
+    
+    # Get AI model settings
+    model_type = "classification"  # Default
+    confidence_threshold = 0.65
+    lookback_days = 60
+    
+    if ml_model:
+        model_params = ml_model.get_parameters() if hasattr(ml_model, 'get_parameters') else {}
+        model_type = model_params.get('model_type', model_type)
+        confidence_threshold = model_params.get('confidence_threshold', confidence_threshold)
+        lookback_days = model_params.get('lookback_days', lookback_days)
+    
     return render_template(
         'settings.html',
         trading_interval=trading_interval,
-        risk_params=risk_params
+        risk_params=risk_params,
+        api_key=api_key,
+        api_secret=api_secret,
+        api_base_url=api_base_url,
+        model_type=model_type,
+        confidence_threshold=confidence_threshold,
+        lookback_days=lookback_days
     )
 
 @app.route('/performance')
@@ -241,6 +284,48 @@ def account_info():
             return jsonify({"success": False, "message": f"Error: {str(e)}"})
     else:
         return jsonify({"success": False, "message": "Trading engine not initialized"})
+
+@app.route('/api/test_connection', methods=['POST'])
+def test_connection():
+    try:
+        data = request.json
+        api_key = data.get('api_key', '').strip()
+        api_secret = data.get('api_secret', '').strip()
+        api_base_url = data.get('api_base_url', 'https://paper-api.alpaca.markets')
+        
+        if not api_key or not api_secret:
+            return jsonify({"success": False, "message": "API key and secret are required"})
+        
+        # Create a temporary API connection to test credentials
+        import alpaca_trade_api as tradeapi
+        
+        api = tradeapi.REST(
+            api_key,
+            api_secret,
+            api_base_url,
+            api_version='v2'
+        )
+        
+        # Try to get account info to test connection
+        account = api.get_account()
+        
+        # If we got here, the connection is successful
+        return jsonify({
+            "success": True,
+            "message": "Connection successful",
+            "account": {
+                "account_number": account.account_number,
+                "cash": account.cash,
+                "portfolio_value": account.portfolio_value,
+                "buying_power": account.buying_power,
+                "equity": account.equity,
+                "status": account.status
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error testing API connection: {str(e)}")
+        return jsonify({"success": False, "message": f"Error: {str(e)}"})
 
 # Initialize the database and trading engine
 with app.app_context():
