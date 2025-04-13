@@ -13,12 +13,23 @@ from data_processor import DataProcessor
 from risk_manager import RiskManager
 from performance_tracker import PerformanceTracker
 
+# Import new enhanced data source modules
+from trading_engine.news_analyzer import NewsAnalyzer
+from trading_engine.social_sentiment import SocialSentimentAnalyzer
+from trading_engine.fundamental_analysis import FundamentalAnalyzer
+from trading_engine.data_integration import EnhancedDataIntegrator
+
 logger = logging.getLogger(__name__)
 
 class TradingEngine:
     """
     Main trading engine that orchestrates the data collection, analysis, 
-    and trade execution processes.
+    and trade execution processes with enhanced data sources including:
+    - Technical analysis (price, volume, indicators)
+    - News sentiment analysis
+    - Social media sentiment analysis
+    - Fundamental company data
+    - Economic indicators
     """
     
     def __init__(self, data_processor):
@@ -47,6 +58,14 @@ class TradingEngine:
         self.risk_manager = RiskManager()
         self.performance_tracker = PerformanceTracker()
         self.ml_model_factory = MLModelFactory()
+        
+        # Initialize enhanced data sources
+        try:
+            self.data_integrator = EnhancedDataIntegrator()
+            logger.info("Enhanced data integrator initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing enhanced data integrator: {str(e)}")
+            self.data_integrator = None
         
         # Dictionary to store active trading threads
         self.active_strategies = {}
@@ -143,7 +162,7 @@ class TradingEngine:
                 time.sleep(60)  # Sleep and retry on error
     
     def _process_symbol(self, symbol, strategy, ml_model):
-        """Process a single symbol for trading decisions."""
+        """Process a single symbol for trading decisions with enhanced data sources."""
         logger.info(f"Processing symbol {symbol} for strategy {strategy.name}")
         
         try:
@@ -159,14 +178,72 @@ class TradingEngine:
                 logger.warning(f"No historical data available for {symbol}")
                 return
             
-            # Prepare features for prediction
-            features = self.data_processor.prepare_features(historical_data)
+            # Enrich the data with enhanced sources if available
+            enhanced_data = {}
+            try:
+                if self.data_integrator:
+                    logger.info(f"Enriching data for {symbol} with alternative data sources")
+                    # Put the historical data in a dictionary with the symbol as key
+                    price_data = {symbol: historical_data}
+                    # Enrich with news, social, and fundamental data
+                    enhanced_data = self.data_integrator.enrich_market_data([symbol], price_data)
+                    
+                    if symbol in enhanced_data:
+                        logger.info(f"Successfully enriched data for {symbol}")
+                        # Prepare features with enhanced data
+                        enhanced_features = self.data_integrator.prepare_enhanced_features(enhanced_data)
+                        
+                        if symbol in enhanced_features:
+                            # Use enhanced features for prediction
+                            features = enhanced_features[symbol].values
+                        else:
+                            # Fall back to standard features if enhanced preparation failed
+                            features = self.data_processor.prepare_features(historical_data)
+                    else:
+                        # Fall back to standard features
+                        features = self.data_processor.prepare_features(historical_data)
+                else:
+                    # Fall back to standard features if data integrator is not available
+                    features = self.data_processor.prepare_features(historical_data)
+            except Exception as e:
+                logger.error(f"Error enriching data for {symbol}: {str(e)}")
+                # Fall back to standard features on error
+                features = self.data_processor.prepare_features(historical_data)
             
-            # Make prediction
+            # Make prediction with ML model
             prediction = ml_model.predict(features)
             prediction_prob = ml_model.predict_proba(features)
             
             logger.info(f"Prediction for {symbol}: {prediction} with confidence {prediction_prob}")
+            
+            # Get trading signals from enhanced data if available
+            enhanced_signals = None
+            if self.data_integrator and symbol in enhanced_data:
+                try:
+                    # Create ML prediction dict for data integrator
+                    ml_predictions = {
+                        symbol: {
+                            'action': 'buy' if prediction == 1 else 'sell',
+                            'confidence': prediction_prob
+                        }
+                    }
+                    
+                    # Get trading signals incorporating all data sources
+                    signals = self.data_integrator.create_trading_signals(enhanced_data, ml_predictions)
+                    
+                    if symbol in signals:
+                        enhanced_signals = signals[symbol]
+                        logger.info(f"Enhanced signals for {symbol}: {enhanced_signals['action']} with confidence {enhanced_signals['confidence']}")
+                        
+                        # Adjust the ML prediction based on enhanced signals
+                        if enhanced_signals['action'] == 'buy':
+                            prediction = 1
+                            prediction_prob = enhanced_signals['confidence']
+                        elif enhanced_signals['action'] == 'sell':
+                            prediction = 0
+                            prediction_prob = enhanced_signals['confidence']
+                except Exception as e:
+                    logger.error(f"Error getting enhanced signals for {symbol}: {str(e)}")
             
             # Get current position
             try:
