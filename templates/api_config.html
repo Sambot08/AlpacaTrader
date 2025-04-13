@@ -1,0 +1,201 @@
+{% extends "layout.html" %}
+
+{% block title %}API Configuration{% endblock %}
+
+{% block page_header %}API Configuration{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Alpaca API Settings</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="/api_config">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <div class="mb-3">
+                        <label for="api_key" class="form-label">Alpaca API Key</label>
+                        <input type="text" class="form-control" id="api_key" name="api_key" 
+                               value="{{ api_key }}" placeholder="Enter your Alpaca API Key">
+                        <div class="form-text">Your Alpaca API Key from the Alpaca dashboard</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="api_secret" class="form-label">Alpaca API Secret</label>
+                        <input type="password" class="form-control" id="api_secret" name="api_secret" 
+                               value="{{ api_secret }}" placeholder="Enter your Alpaca API Secret">
+                        <div class="form-text">Your Alpaca API Secret from the Alpaca dashboard</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="api_base_url" class="form-label">API Environment</label>
+                        <select class="form-select" id="api_base_url" name="api_base_url">
+                            <option value="https://paper-api.alpaca.markets" {% if api_base_url == 'https://paper-api.alpaca.markets' %}selected{% endif %}>Paper Trading (Practice)</option>
+                            <option value="https://api.alpaca.markets" {% if api_base_url == 'https://api.alpaca.markets' %}selected{% endif %}>Live Trading (Real Money)</option>
+                        </select>
+                        <div class="form-text">Select Paper Trading for testing or Live Trading for real trades with your money</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="data_source" class="form-label">Market Data Source</label>
+                        <select class="form-select" id="data_source" name="data_source">
+                            <option value="iex" {% if data_source == 'iex' %}selected{% endif %}>IEX (Free, 15-min delayed data)</option>
+                            <option value="sip" {% if data_source == 'sip' %}selected{% endif %}>SIP (Premium, real-time data)</option>
+                        </select>
+                        <div class="form-text">Choose your market data source based on your Alpaca subscription</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mb-3">
+                        <button type="button" id="test_connection" class="btn btn-outline-primary">Test API Connection</button>
+                    </div>
+                    <div id="connection_status" class="alert alert-info d-none">
+                        Checking connection...
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">Save API Settings</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="card-title mb-0">API Information</h5>
+            </div>
+            <div class="card-body">
+                <h6>Account Information</h6>
+                {% if account_info %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Account ID</th>
+                                <td>{{ account_info.id }}</td>
+                            </tr>
+                            <tr>
+                                <th>Account Status</th>
+                                <td>
+                                    {% if account_info.status == 'ACTIVE' %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">{{ account_info.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Cash Balance</th>
+                                <td>${{ account_info.cash | default('0.00') }}</td>
+                            </tr>
+                            <tr>
+                                <th>Portfolio Value</th>
+                                <td>${{ account_info.portfolio_value | default('0.00') }}</td>
+                            </tr>
+                            <tr>
+                                <th>Buying Power</th>
+                                <td>${{ account_info.buying_power | default('0.00') }}</td>
+                            </tr>
+                            <tr>
+                                <th>Trading Account Type</th>
+                                <td>{{ account_info.account_type | default('Unknown') }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        Connect to the Alpaca API to view your account information.
+                    </div>
+                {% endif %}
+                
+                <h6 class="mt-4">API Subscription</h6>
+                {% if subscription_info %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Plan</th>
+                                <td>{{ subscription_info.plan | default('Free') }}</td>
+                            </tr>
+                            <tr>
+                                <th>Data Subscriptions</th>
+                                <td>{{ subscription_info.data_subscriptions | default('None') }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        Connect to the Alpaca API to view your subscription information.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const testButton = document.getElementById('test_connection');
+    const connectionStatus = document.getElementById('connection_status');
+    
+    if (testButton && connectionStatus) {
+        testButton.addEventListener('click', function() {
+            const apiKey = document.getElementById('api_key').value.trim();
+            const apiSecret = document.getElementById('api_secret').value.trim();
+            const apiBaseUrl = document.getElementById('api_base_url').value;
+            
+            if (!apiKey || !apiSecret) {
+                connectionStatus.className = 'alert alert-danger';
+                connectionStatus.textContent = 'Please enter your API key and secret first.';
+                connectionStatus.classList.remove('d-none');
+                return;
+            }
+            
+            // Show checking status
+            connectionStatus.className = 'alert alert-info';
+            connectionStatus.textContent = 'Testing connection to Alpaca API...';
+            connectionStatus.classList.remove('d-none');
+            
+            // Send request to test the connection
+            fetch('/api/test_connection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    api_key: apiKey,
+                    api_secret: apiSecret,
+                    api_base_url: apiBaseUrl
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    connectionStatus.className = 'alert alert-success';
+                    connectionStatus.innerHTML = `<strong>Success!</strong> Connected to Alpaca API.<br>Account: ${data.account.account_number || 'N/A'}<br>Cash Balance: $${parseFloat(data.account.cash || 0).toFixed(2)}<br>Portfolio Value: $${parseFloat(data.account.portfolio_value || 0).toFixed(2)}`;
+                    
+                    // Refresh the page after successful connection to show updated account info
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 3000);
+                } else {
+                    connectionStatus.className = 'alert alert-danger';
+                    connectionStatus.textContent = `Connection failed: ${data.message}`;
+                }
+            })
+            .catch(error => {
+                connectionStatus.className = 'alert alert-danger';
+                connectionStatus.textContent = `Error testing connection: ${error.message}`;
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

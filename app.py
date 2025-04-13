@@ -52,12 +52,13 @@ def init_trading_engine():
     api_key = os.environ.get("ALPACA_API_KEY")
     api_secret = os.environ.get("ALPACA_API_SECRET")
     base_url = os.environ.get("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")  # Default to paper trading
+    data_source = os.environ.get("ALPACA_DATA_SOURCE", "iex")  # Default to IEX (free tier)
     
     if not api_key or not api_secret:
         logger.warning("Alpaca API credentials not found. Trading engine will be initialized but not active.")
         
     # Initialize components
-    data_fetcher = AlpacaDataFetcher(api_key, api_secret, base_url)
+    data_fetcher = AlpacaDataFetcher(api_key, api_secret, base_url, data_source=data_source)
     ml_model = MLModel()
     risk_manager = RiskManager()
     trade_executor = TradeExecutor(api_key, api_secret, base_url)
@@ -284,6 +285,72 @@ def account_info():
             return jsonify({"success": False, "message": f"Error: {str(e)}"})
     else:
         return jsonify({"success": False, "message": "Trading engine not initialized"})
+
+@app.route('/api_config', methods=['GET', 'POST'])
+def api_config():
+    if request.method == 'POST':
+        try:
+            # Get API credentials
+            api_key = request.form.get('api_key', '').strip()
+            api_secret = request.form.get('api_secret', '').strip()
+            api_base_url = request.form.get('api_base_url')
+            data_source = request.form.get('data_source', 'iex')  # Default to IEX (free tier)
+            
+            # Save API credentials if provided
+            if api_key and api_secret:
+                # In a production app, use a secure method to store credentials
+                # For now, we'll store them in environment variables
+                os.environ['ALPACA_API_KEY'] = api_key
+                os.environ['ALPACA_API_SECRET'] = api_secret
+                os.environ['ALPACA_BASE_URL'] = api_base_url
+                os.environ['ALPACA_DATA_SOURCE'] = data_source
+                
+                # Reinitialize the trading engine with new credentials
+                try:
+                    global trading_strategy, data_fetcher, ml_model, risk_manager, trade_executor, performance_tracker
+                    trading_strategy = init_trading_engine()
+                    flash("API credentials updated and trading engine reinitialized!", "success")
+                except Exception as e:
+                    flash(f"Error reinitializing trading engine: {str(e)}", "danger")
+            else:
+                flash("API credentials are required", "warning")
+                
+        except Exception as e:
+            flash(f"Error updating API settings: {str(e)}", "danger")
+            
+        return redirect(url_for('api_config'))
+    
+    # For GET requests
+    # Get current API settings
+    api_key = os.environ.get('ALPACA_API_KEY', '')
+    api_secret = os.environ.get('ALPACA_API_SECRET', '')
+    api_base_url = os.environ.get('ALPACA_BASE_URL', 'https://paper-api.alpaca.markets')
+    data_source = os.environ.get('ALPACA_DATA_SOURCE', 'iex')
+    
+    # Get account info if available
+    account_info = None
+    subscription_info = None
+    
+    if trade_executor:
+        try:
+            account_info = trade_executor.get_account()
+            # Subscription info might be available depending on Alpaca API version
+            subscription_info = {
+                'plan': 'Free Tier',  # Default for paper trading
+                'data_subscriptions': data_source.upper()
+            }
+        except Exception as e:
+            logger.error(f"Error fetching account info: {str(e)}")
+    
+    return render_template(
+        'api_config.html',
+        api_key=api_key,
+        api_secret=api_secret,
+        api_base_url=api_base_url,
+        data_source=data_source,
+        account_info=account_info,
+        subscription_info=subscription_info
+    )
 
 @app.route('/api/test_connection', methods=['POST'])
 def test_connection():
