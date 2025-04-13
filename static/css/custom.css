@@ -1,0 +1,104 @@
+/* Custom styles for AI Trading System */
+
+/* Card styles */
+.card {
+    border: none;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background-color: rgba(0, 0, 0, 0.15);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.75rem 1.25rem;
+}
+
+/* Border left cards for summary stats */
+.border-left-primary {
+    border-left: 0.25rem solid var(--bs-primary) !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid var(--bs-success) !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid var(--bs-info) !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid var(--bs-warning) !important;
+}
+
+.border-left-danger {
+    border-left: 0.25rem solid var(--bs-danger) !important;
+}
+
+/* Feature icons */
+.feature-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 0.5rem;
+}
+
+/* Navbar customization */
+.navbar {
+    padding: 0.5rem 1rem;
+    box-shadow: 0 0.125rem 0.25rem 0 rgba(58, 59, 69, 0.2);
+}
+
+.navbar-brand {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Strategy list */
+.strategy-list .list-group-item {
+    border-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.strategy-list .list-group-item:hover {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Metric items in cards */
+.metric-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.metric-item:last-child {
+    border-bottom: none;
+}
+
+/* Table customization */
+.table {
+    margin-bottom: 0;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Chart container */
+canvas {
+    max-width: 100%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2rem;
+    }
+    
+    .feature-icon {
+        width: 3rem;
+        height: 3rem;
+    }
+}

@@ -1,0 +1,130 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row align-items-center">
+        <div class="col-lg-6">
+            <h1 class="display-4 fw-bold mb-4">AI-Powered Algorithmic Trading</h1>
+            <p class="lead mb-4">
+                Leverage the power of machine learning and artificial intelligence to make data-driven trading decisions in the stock market.
+            </p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-4">
+                <a href="/dashboard" class="btn btn-primary btn-lg px-4 me-md-2">
+                    <i class="fas fa-chart-line me-2"></i>View Dashboard
+                </a>
+                <a href="/settings" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="fas fa-cog me-2"></i>Configure Settings
+                </a>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card bg-dark">
+                <div class="card-body">
+                    <h5 class="card-title">System Overview</h5>
+                    <div class="row text-center my-4">
+                        <div class="col-md-4">
+                            <div class="feature-icon p-3 mb-2 bg-primary bg-opacity-10 rounded">
+                                <i class="fas fa-brain fa-2x text-primary"></i>
+                            </div>
+                            <h6>ML Predictions</h6>
+                            <p class="text-muted small">Advanced algorithms predict market movements</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="feature-icon p-3 mb-2 bg-warning bg-opacity-10 rounded">
+                                <i class="fas fa-shield-alt fa-2x text-warning"></i>
+                            </div>
+                            <h6>Risk Management</h6>
+                            <p class="text-muted small">Smart position sizing and stop-loss rules</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="feature-icon p-3 mb-2 bg-success bg-opacity-10 rounded">
+                                <i class="fas fa-chart-bar fa-2x text-success"></i>
+                            </div>
+                            <h6>Performance Tracking</h6>
+                            <p class="text-muted small">Real-time monitoring of trading results</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="feature-icon p-3 me-3 bg-primary bg-opacity-10 rounded">
+                            <i class="fas fa-robot text-primary"></i>
+                        </div>
+                        <h5 class="card-title mb-0">AI Trading Models</h5>
+                    </div>
+                    <p class="card-text">Our system uses multiple machine learning algorithms including Random Forest, Gradient Boosting, and SVM to identify profitable trading opportunities.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="feature-icon p-3 me-3 bg-info bg-opacity-10 rounded">
+                            <i class="fas fa-database text-info"></i>
+                        </div>
+                        <h5 class="card-title mb-0">Market Data Analysis</h5>
+                    </div>
+                    <p class="card-text">Process historical and real-time market data with technical indicators to find patterns and generate trading signals.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="feature-icon p-3 me-3 bg-success bg-opacity-10 rounded">
+                            <i class="fas fa-exchange-alt text-success"></i>
+                        </div>
+                        <h5 class="card-title mb-0">Automated Execution</h5>
+                    </div>
+                    <p class="card-text">Connect to Alpaca API for seamless order execution. The system automatically places trades based on AI predictions and risk parameters.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Getting Started</h4>
+                    <p>Follow these steps to set up your AI trading system:</p>
+                    <ol class="list-group list-group-numbered mb-4">
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Configure Alpaca API</div>
+                                Enter your Alpaca API key and secret in the Settings page
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Create Trading Strategy</div>
+                                Select stock symbols, ML model, and risk parameters
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Monitor Performance</div>
+                                Track your trading results in real-time on the Dashboard
+                            </div>
+                        </li>
+                    </ol>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                        <a href="/settings" class="btn btn-primary">
+                            <i class="fas fa-arrow-right me-2"></i>Start Configuration
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

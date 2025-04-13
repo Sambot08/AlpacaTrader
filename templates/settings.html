@@ -1,0 +1,182 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Trading Settings</h1>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Strategy Configuration -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Trading Strategy Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form id="strategy-form" method="post" action="/settings">
+                        <div class="mb-3">
+                            <label for="strategy_name" class="form-label">Strategy Name</label>
+                            <input type="text" class="form-control" id="strategy_name" name="strategy_name" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="stock_symbols" class="form-label">Stock Symbols</label>
+                            <input type="text" class="form-control" id="stock_symbols" name="stock_symbols" 
+                                   placeholder="AAPL, MSFT, GOOGL, AMZN" required>
+                            <div class="form-text">Enter stock symbols separated by commas.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="ml_model_type" class="form-label">ML Model Type</label>
+                            <select class="form-select" id="ml_model_type" name="ml_model_type" required>
+                                <option value="random_forest">Random Forest</option>
+                                <option value="gradient_boosting">Gradient Boosting</option>
+                                <option value="logistic_regression">Logistic Regression</option>
+                                <option value="svm">SVM</option>
+                            </select>
+                            <div class="form-text">Select the machine learning model to use for predictions.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="risk_level" class="form-label">Risk Level</label>
+                            <select class="form-select" id="risk_level" name="risk_level" required>
+                                <option value="1">Very Low (1)</option>
+                                <option value="2">Low (2)</option>
+                                <option value="3" selected>Medium (3)</option>
+                                <option value="4">High (4)</option>
+                                <option value="5">Very High (5)</option>
+                            </select>
+                            <div class="form-text">Higher risk levels allow for larger position sizes.</div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Save Strategy</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- API Configuration -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Alpaca API Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form id="api-form">
+                        <div class="mb-3">
+                            <label for="api_key" class="form-label">API Key</label>
+                            <input type="text" class="form-control" id="api_key" name="api_key" placeholder="Your Alpaca API Key">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="api_secret" class="form-label">API Secret</label>
+                            <input type="password" class="form-control" id="api_secret" name="api_secret" placeholder="Your Alpaca API Secret">
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="paper_trading" name="paper_trading" checked>
+                                <label class="form-check-label" for="paper_trading">
+                                    Use Paper Trading
+                                </label>
+                            </div>
+                            <div class="form-text">Recommended for testing. No real money will be used.</div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success">Save API Settings</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Existing Strategies -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Existing Strategies</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group strategy-list">
+                        {% for strategy in strategies %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center strategy-item" 
+                            data-strategy-id="{{ strategy.id }}"
+                            data-strategy-name="{{ strategy.name }}"
+                            data-strategy-symbols="{{ strategy.symbols }}"
+                            data-strategy-model="{{ strategy.ml_model }}"
+                            data-strategy-risk="{{ strategy.risk_level }}">
+                            {{ strategy.name }}
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary edit-strategy">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-strategy">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+
+                    {% if not strategies %}
+                    <div class="text-center py-3">
+                        <p class="text-muted">No strategies created yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Risk Management Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Risk Management</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Risk Level Guidelines</h6>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <small>Very Low (1)</small>
+                            <small>Very High (5)</small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 20%">1</div>
+                            <div class="progress-bar bg-info" role="progressbar" style="width: 20%">2</div>
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: 20%">3</div>
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: 20%">4</div>
+                            <div class="progress-bar bg-dark" role="progressbar" style="width: 20%">5</div>
+                        </div>
+                    </div>
+                    <table class="table table-sm small">
+                        <tbody>
+                            <tr>
+                                <td>Very Low (1)</td>
+                                <td>1% of account per position</td>
+                            </tr>
+                            <tr>
+                                <td>Low (2)</td>
+                                <td>2% of account per position</td>
+                            </tr>
+                            <tr>
+                                <td>Medium (3)</td>
+                                <td>5% of account per position</td>
+                            </tr>
+                            <tr>
+                                <td>High (4)</td>
+                                <td>10% of account per position</td>
+                            </tr>
+                            <tr>
+                                <td>Very High (5)</td>
+                                <td>15% of account per position</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+{% endblock %}
