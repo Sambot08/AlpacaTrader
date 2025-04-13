@@ -16,6 +16,7 @@ from trading_engine.risk_manager import RiskManager
 from trading_engine.trade_executor import TradeExecutor
 from trading_engine.strategy import TradingStrategy
 from trading_engine.performance import PerformanceTracker
+from extensions import db  # Import db from extensions
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -235,8 +236,11 @@ def start_trading():
     if not trading_active:
         try:
             trading_active = True
-            trading_thread_object = threading.Thread(target=trading_thread, daemon=True)
-            trading_thread_object.start()
+            try:
+                trading_thread_object = threading.Thread(target=trading_thread, daemon=True)
+                trading_thread_object.start()
+            finally:
+                trading_thread_object.join()  # Ensure proper cleanup of the thread
             logger.info("Trading started")
             return jsonify({"success": True, "message": "Trading started"})
         except Exception as e:

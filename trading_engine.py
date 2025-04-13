@@ -83,18 +83,21 @@ class TradingEngine:
             return
         
         # Create a new thread for this strategy
-        strategy_thread = threading.Thread(
-            target=self._run_strategy_loop,
-            args=(strategy,),
-            daemon=True
-        )
+        try:
+            strategy_thread = threading.Thread(
+                target=self._run_strategy_loop,
+                args=(strategy,),
+                daemon=True
+            )
+            strategy_thread.start()
+        finally:
+            strategy_thread.join()  # Ensure proper cleanup of the thread
         
         self.active_strategies[strategy.id] = {
             'thread': strategy_thread,
             'running': True
         }
         
-        strategy_thread.start()
         logger.info(f"Started trading strategy: {strategy.name}")
     
     def stop_strategy(self, strategy):

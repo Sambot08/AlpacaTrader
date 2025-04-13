@@ -6,6 +6,8 @@ from datetime import datetime, date, timedelta
 import matplotlib.pyplot as plt
 import io
 import base64
+import matplotlib
+matplotlib.use('Agg')  # Use a non-GUI backend
 
 logger = logging.getLogger(__name__)
 
