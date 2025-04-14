@@ -1,0 +1,7 @@
+.env
+
+# Ignore portfolio history and other local data
+/data/portfolio_history.csv
+/data/daily_returns.csv
+/instance/trading_bot.db
+/instance/trading.db

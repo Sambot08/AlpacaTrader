@@ -39,16 +39,19 @@ class AlpacaDataFetcher:
         
     def is_market_open(self):
         """
-        Check if the market is currently open
-        
+        Check if the European market is currently open (8:00 AM to 4:30 PM GMT).
+
         Returns:
             bool: True if the market is open, False otherwise
         """
         try:
-            clock = self.api.get_clock()
-            return clock.is_open
+            now = datetime.utcnow()
+            market_open = now.replace(hour=8, minute=0, second=0, microsecond=0)
+            market_close = now.replace(hour=16, minute=30, second=0, microsecond=0)
+
+            return market_open <= now <= market_close
         except Exception as e:
-            logger.error(f"Error checking market status: {str(e)}")
+            logger.error(f"Error checking European market status: {str(e)}")
             return False
             
     def get_market_hours(self):
