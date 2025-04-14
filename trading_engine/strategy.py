@@ -109,8 +109,15 @@ class TradingStrategy:
                 end_date=end_date
             )
             
-            # Update historical data
-            self.historical_data.update(data)
+            # Check for insufficient data
+            for symbol, data in data.items():
+                if len(data) < self.lookback_days:
+                    logger.warning(f"Insufficient data for {symbol} to train model")
+                    continue
+
+                # Update historical data for valid symbols
+                self.historical_data[symbol] = data
+
             self.last_data_update = datetime.now()
             
             logger.info(f"Updated historical data for {len(data)} symbols")

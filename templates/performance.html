@@ -125,7 +125,7 @@
                         <tbody>
                             {% for return in performance_data.daily_returns[:10] %}
                             <tr>
-                                <td>{{ return.date.split('T')[0] }}</td>
+                                <td>{{ return.date.strftime('%Y-%m-%d') }}</td>
                                 <td>${{ "%.2f"|format(return.portfolio_value) }}</td>
                                 <td class="{% if return.daily_return > 0 %}position-profit{% elif return.daily_return < 0 %}position-loss{% endif %}">
                                     ${{ "%.2f"|format(return.daily_return) }}

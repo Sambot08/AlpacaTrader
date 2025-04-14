@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from collections import defaultdict
+from app import db
+from models import SocialSentiment
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -208,84 +210,95 @@ class SocialSentimentAnalyzer:
         
         return combined_sentiment
     
+    def store_sentiment_in_db(self, symbol, source, sentiment_score):
+        """Store sentiment data in the database."""
+        try:
+            sentiment_entry = SocialSentiment(
+                symbol=symbol,
+                source=source,
+                sentiment_score=sentiment_score,
+                timestamp=datetime.utcnow()
+            )
+            db.session.add(sentiment_entry)
+            db.session.commit()
+        except Exception as e:
+            logger.error(f"Error storing sentiment data for {symbol} from {source}: {str(e)}")
+
+    def refresh_sentiment_data(self, symbols):
+        """Fetch and store sentiment data for all symbols."""
+        try:
+            for symbol in symbols:
+                reddit_sentiment = self.get_reddit_sentiment([symbol])
+                stocktwits_sentiment = self.get_stocktwits_sentiment([symbol])
+
+                # Store in database
+                self.store_sentiment_in_db(symbol, 'reddit', reddit_sentiment.get(symbol, 0.0))
+                self.store_sentiment_in_db(symbol, 'stocktwits', stocktwits_sentiment.get(symbol, 0.0))
+
+                combined_sentiment = self.get_combined_sentiment([symbol])
+                self.store_sentiment_in_db(symbol, 'combined', combined_sentiment.get(symbol, 0.0))
+
+            logger.info("Sentiment data refreshed successfully.")
+        except Exception as e:
+            logger.error(f"Error refreshing sentiment data: {str(e)}")
+    
     def _fetch_reddit_posts(self, symbol, subreddit, days_back=1):
         """
-        Fetch posts from Reddit containing the symbol
-        
-        Args:
-            symbol (str): Stock symbol
-            subreddit (str): Subreddit to search
-            days_back (int): Number of days back to search
-            
-        Returns:
-            list: List of posts with title, body, and upvotes
+        Fetch posts from Reddit containing the symbol using Reddit API
         """
-        # This is a simplified version - in production, you would use 
-        # the Reddit API with proper authentication
-        
         try:
-            # For demonstration, we'll return a simple example
-            # In a real implementation, you would make an API call to Reddit
-            
-            # Sample posts to simulate API response
-            sample_posts = [
-                {
-                    'title': f"DD on {symbol} - Great potential for growth",
-                    'body': f"I've analyzed {symbol} and found it to be undervalued. The company has solid fundamentals and upcoming catalysts.",
-                    'upvotes': 25,
-                    'created_utc': (datetime.now() - timedelta(hours=6)).timestamp()
-                },
-                {
-                    'title': f"Is {symbol} a good buy right now?",
-                    'body': f"Looking at the chart for {symbol}, it seems to be at a support level. What do you think?",
-                    'upvotes': 5,
-                    'created_utc': (datetime.now() - timedelta(hours=12)).timestamp()
-                }
-            ]
-            
-            # Filter by date
-            min_timestamp = (datetime.now() - timedelta(days=days_back)).timestamp()
-            filtered_posts = [post for post in sample_posts if post['created_utc'] >= min_timestamp]
-            
-            return filtered_posts
-        
+            # Replace with actual Reddit API integration
+            headers = {
+                'User-Agent': 'AlpacaTrader/1.0',
+                'Authorization': f'Bearer {os.getenv("REDDIT_API_TOKEN")}'
+            }
+            base_url = f'https://www.reddit.com/r/{subreddit}/search.json'
+            params = {
+                'q': symbol,
+                'restrict_sr': True,
+                'sort': 'new',
+                'limit': 100
+            }
+            response = requests.get(base_url, headers=headers, params=params)
+            response.raise_for_status()
+            data = response.json()
+
+            posts = []
+            for post in data['data']['children']:
+                created_utc = post['data']['created_utc']
+                if created_utc >= (datetime.now() - timedelta(days=days_back)).timestamp():
+                    posts.append({
+                        'title': post['data']['title'],
+                        'body': post['data'].get('selftext', ''),
+                        'upvotes': post['data']['ups'],
+                        'created_utc': created_utc
+                    })
+
+            return posts
         except Exception as e:
             logger.error(f"Error fetching Reddit posts for {symbol} from r/{subreddit}: {str(e)}")
             return []
-    
+
     def _fetch_stocktwits_messages(self, symbol):
         """
-        Fetch messages from StockTwits for a symbol
-        
-        Args:
-            symbol (str): Stock symbol
-            
-        Returns:
-            list: List of messages with body and sentiment
+        Fetch messages from StockTwits for a symbol using StockTwits API
         """
         try:
-            # For demonstration purposes - in production, you would use the StockTwits API
-            # Sample messages to simulate API response
-            sample_messages = [
-                {
-                    'body': f"$${symbol} looking strong today, I'm bullish on this one!",
-                    'sentiment': 'bullish',
-                    'created_at': (datetime.now() - timedelta(hours=2)).isoformat()
-                },
-                {
-                    'body': f"$${symbol} breaking through resistance, could see new highs soon.",
-                    'sentiment': 'bullish', 
-                    'created_at': (datetime.now() - timedelta(hours=5)).isoformat()
-                },
-                {
-                    'body': f"$${symbol} earnings weren't great, but the stock is holding up.",
-                    'sentiment': None,  # No explicit sentiment provided
-                    'created_at': (datetime.now() - timedelta(hours=8)).isoformat()
-                }
-            ]
-            
-            return sample_messages
-            
+            # Replace with actual StockTwits API integration
+            base_url = f'https://api.stocktwits.com/api/2/streams/symbol/{symbol}.json'
+            response = requests.get(base_url)
+            response.raise_for_status()
+            data = response.json()
+
+            messages = []
+            for message in data['messages']:
+                messages.append({
+                    'body': message['body'],
+                    'sentiment': message.get('entities', {}).get('sentiment', {}).get('basic'),
+                    'created_at': message['created_at']
+                })
+
+            return messages
         except Exception as e:
             logger.error(f"Error fetching StockTwits messages for {symbol}: {str(e)}")
             return []

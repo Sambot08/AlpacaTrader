@@ -36,6 +36,25 @@ class DataProcessor:
         else:
             logger.warning("Alpaca API credentials not found. API features will be unavailable.")
     
+    def validate_historical_data(self, df, symbol, days):
+        """
+        Validate the historical data to ensure it is sufficient for training.
+
+        Args:
+            df (pandas.DataFrame): Historical data DataFrame
+            symbol (str): Stock symbol
+            days (int): Number of days of data required
+
+        Returns:
+            pandas.DataFrame: Validated DataFrame or fallback sample data
+        """
+        if df.empty or len(df) < days:
+            logger.warning(f"Insufficient data for {symbol}. Generating sample data.")
+            return self._get_sample_data(symbol, days)
+
+        logger.info(f"Validated historical data for {symbol} with {len(df)} records.")
+        return df
+
     def get_historical_data(self, symbol, days=60, timeframe='1D'):
         """
         Fetch historical data for a given symbol.
@@ -59,6 +78,9 @@ class DataProcessor:
             end_date = datetime.now()
             start_date = end_date - timedelta(days=days)
             
+            # Increase the default number of days to fetch more data
+            days = max(days, 120)  # Ensure at least 120 days of data is fetched
+
             # Fetch data from Alpaca
             df = self.api.get_bars(
                 symbol,
@@ -67,14 +89,9 @@ class DataProcessor:
                 end=end_date.strftime('%Y-%m-%d'),
                 adjustment='raw'
             ).df
-            
-            if df.empty:
-                logger.warning(f"No data received for {symbol}")
-                return self._get_sample_data(symbol, days)
-            
-            logger.info(f"Fetched {len(df)} records for {symbol}")
-            
-            # Add technical indicators
+
+            # Validate and enrich data
+            df = self.validate_historical_data(df, symbol, days)
             self._add_technical_indicators(df)
             
             return df
@@ -202,7 +219,7 @@ class DataProcessor:
         try:
             # Select the latest data point for prediction
             latest_data = df.iloc[-1:].copy()
-            
+
             # Define features to use
             features = [
                 'SMA_5', 'SMA_20', 'SMA_50',
@@ -214,16 +231,23 @@ class DataProcessor:
                 'volume_change',
                 'momentum_1d', 'momentum_5d'
             ]
-            
+
+            # Ensure all required features are present
+            missing_features = [f for f in features if f not in df.columns]
+            if missing_features:
+                logger.warning(f"Missing features: {missing_features}, filling with zeros")
+                for feature in missing_features:
+                    df[feature] = 0
+
             # Extract features
             X = latest_data[features].values
-            
+
             return X
-        
+
         except Exception as e:
             logger.error(f"Error preparing features: {str(e)}")
             # Return a default feature array filled with zeros
-            return np.zeros((1, 14))
+            return np.zeros((1, len(features)))
     
     def get_market_calendar(self, start_date, end_date):
         """
@@ -300,3 +324,12 @@ class DataProcessor:
             prices[symbol] = round(base_price + variation, 2)
         
         return prices
+
+    def save_training_data(self, df, symbol):
+        """Save training data to disk."""
+        try:
+            file_path = f"data/{symbol}_training_data.csv"
+            df.to_csv(file_path, index=True)
+            logger.info(f"Training data saved to {file_path}")
+        except Exception as e:
+            logger.error(f"Error saving training data for {symbol}: {str(e)}")

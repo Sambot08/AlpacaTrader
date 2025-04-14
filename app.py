@@ -9,9 +9,11 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
+import dotenv
 
 # Load environment variables from .env file
 load_dotenv()
+dotenv.load_dotenv()
 
 # Local imports
 from trading_engine.data_fetcher import AlpacaDataFetcher
@@ -24,12 +26,6 @@ from extensions import db  # Import db from extensions
 
 # Set up logging
 logger = logging.getLogger(__name__)
-
-# Database setup
-class Base(DeclarativeBase):
-    pass
-
-db = SQLAlchemy(model_class=Base)
 
 # Create the Flask app
 app = Flask(__name__)
@@ -61,6 +57,9 @@ def init_trading_engine():
     if not api_key or not api_secret:
         logger.warning("Alpaca API credentials not found. Trading engine will be initialized but not active.")
         
+    # Ensure base_url does not end with a trailing slash
+    base_url = base_url.rstrip('/')
+    
     # Initialize components
     data_fetcher = AlpacaDataFetcher(api_key, api_secret, base_url)
     ml_model = MLModel()
@@ -682,9 +681,38 @@ def get_ai_analysis():
             'message': f"Error getting AI analysis data: {str(e)}"
         })
 
+@app.route('/api/social_sentiment', methods=['GET'])
+def get_social_sentiment():
+    """API endpoint to fetch the latest social sentiment data."""
+    try:
+        symbol = request.args.get('symbol', None)
+        if not symbol:
+            return jsonify({"success": False, "message": "Symbol is required"}), 400
+
+        # Query the latest sentiment data for the symbol
+        sentiment_data = SocialSentiment.query.filter_by(symbol=symbol).order_by(SocialSentiment.timestamp.desc()).all()
+
+        if not sentiment_data:
+            return jsonify({"success": False, "message": "No sentiment data found for the symbol"}), 404
+
+        # Format the response
+        response = [
+            {
+                "source": data.source,
+                "sentiment_score": data.sentiment_score,
+                "timestamp": data.timestamp
+            } for data in sentiment_data
+        ]
+
+        return jsonify({"success": True, "data": response})
+
+    except Exception as e:
+        logger.error(f"Error fetching social sentiment data: {str(e)}")
+        return jsonify({"success": False, "message": "An error occurred while fetching sentiment data"}), 500
+
 # Initialize the database and trading engine
 with app.app_context():
-    from models import Trade, Position, PerformanceMetric
+    from models import Trade, Position, PerformanceMetric, SocialSentiment
     db.create_all()
     
     # Initialize trading components

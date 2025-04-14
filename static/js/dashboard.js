@@ -27,6 +27,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set up auto-refresh
     setupAutoRefresh();
+    
+    // Example usage: Fetch sentiment for AAPL on page load
+    fetchSocialSentiment('AAPL');
 });
 
 // Trading toggle functionality
@@ -71,24 +74,7 @@ if (tradingToggle) {
 if (symbolsForm) {
     symbolsForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        
-        const symbolsText = symbolsInput.value.trim();
-        if (!symbolsText) {
-            showAlert('Please enter at least one symbol', 'warning');
-            return;
-        }
-        
-        // Parse symbols
-        const symbols = symbolsText.split(',')
-            .map(s => s.trim().toUpperCase())
-            .filter(s => s.length > 0);
-            
-        if (symbols.length === 0) {
-            showAlert('Please enter valid symbols', 'warning');
-            return;
-        }
-        
-        // Update symbols
+        const symbols = ['AAPL']; // Limit to AAPL only
         updateSymbols(symbols);
     });
 }
@@ -669,4 +655,38 @@ function updateAIConfidenceChart(data) {
     aiConfidenceChart.data.datasets[0].backgroundColor = backgroundColors;
     
     aiConfidenceChart.update();
+}
+
+// Fetch and display social sentiment data
+function fetchSocialSentiment(symbol) {
+    const socialTableBody = document.getElementById('social-table-body');
+    if (!socialTableBody) return;
+
+    // Show loading state
+    socialTableBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading social sentiment data...</td></tr>';
+
+    fetch(`/api/social_sentiment?symbol=${symbol}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data) {
+                let html = '';
+                data.data.forEach(item => {
+                    html += `
+                        <tr>
+                            <td>${symbol}</td>
+                            <td>${item.source}</td>
+                            <td>${item.sentiment_score.toFixed(2)}</td>
+                            <td>${new Date(item.timestamp).toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+                socialTableBody.innerHTML = html;
+            } else {
+                socialTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">No social sentiment data available</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching social sentiment data:', error);
+            socialTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading social sentiment data</td></tr>';
+        });
 }

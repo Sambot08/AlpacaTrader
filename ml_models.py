@@ -11,6 +11,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import warnings
+import json
+from datetime import datetime
 
 # Suppress warnings
 warnings.filterwarnings('ignore')
@@ -27,7 +29,31 @@ class BaseMLModel:
     
     def train(self, X, y):
         """Train the model on historical data."""
-        raise NotImplementedError("Subclasses must implement train method")
+        try:
+            # Train the model
+            self.model.fit(X, y)
+            self.is_trained = True
+
+            # Save the trained model to disk
+            model_path = f"models/{self.model_type}_model.pkl"
+            self.save_model(model_path)
+
+            # Save metadata
+            metadata = {
+                'model_type': self.model_type,
+                'training_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'num_samples': len(X)
+            }
+            metadata_path = f"models/{self.model_type}_metadata.json"
+            with open(metadata_path, 'w') as f:
+                json.dump(metadata, f)
+
+            logger.info(f"Model and metadata saved successfully for {self.model_type}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error training {self.model_type} model: {str(e)}")
+            return False
     
     def predict(self, X):
         """Make predictions with the trained model."""
