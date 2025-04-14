@@ -10,6 +10,7 @@ from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 import dotenv
+import praw
 
 # Load environment variables from .env file
 load_dotenv()
@@ -44,6 +45,15 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
 }
 db.init_app(app)
+
+# Initialize the Reddit API client
+reddit = praw.Reddit(
+    client_id="your_client_id",
+    client_secret="your_client_secret",
+    user_agent="your_user_agent",
+    username="your_reddit_username",
+    password="your_reddit_password"
+)
 
 # Initialize trading components
 def init_trading_engine():
@@ -469,7 +479,7 @@ def get_news_sentiment():
         })
 
 @app.route('/api/enhanced_data/social_sentiment')
-def get_social_sentiment():
+def get_enhanced_social_sentiment():
     """Get social media sentiment data for trading symbols."""
     try:
         # Get the symbols from the active trading strategies

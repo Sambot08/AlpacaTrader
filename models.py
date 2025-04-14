@@ -63,3 +63,16 @@ class PerformanceMetric(db.Model):
     
     def __repr__(self):
         return f"<PerformanceMetric {self.date} {self.portfolio_value}>"
+
+class SocialSentiment(db.Model):
+    """Model for storing social sentiment data"""
+    __tablename__ = 'social_sentiment'
+
+    id = db.Column(db.Integer, primary_key=True)
+    symbol = db.Column(db.String(20), nullable=False, index=True)
+    source = db.Column(db.String(50), nullable=False)  # e.g., Reddit, StockTwits
+    sentiment_score = db.Column(db.Float, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    def __repr__(self):
+        return f"<SocialSentiment {self.symbol} {self.source} {self.sentiment_score}>"
