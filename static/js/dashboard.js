@@ -30,6 +30,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Example usage: Fetch sentiment for AAPL on page load
     fetchSocialSentiment('AAPL');
+    
+    // Fetch Bitcoin price on page load
+    fetchBitcoinPrice();
 });
 
 // Trading toggle functionality
@@ -209,6 +212,9 @@ function setupAutoRefresh() {
             fetchEnhancedData();
         }
     }, 60000);
+    
+    // Refresh Bitcoin price every 30 seconds
+    setInterval(fetchBitcoinPrice, 30000);
 }
 
 // Initialize the enhanced data tabs
@@ -690,3 +696,32 @@ function fetchSocialSentiment(symbol) {
             socialTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading social sentiment data</td></tr>';
         });
 }
+
+// Fetch and display Bitcoin price
+function fetchBitcoinPrice() {
+    const bitcoinPriceElement = document.getElementById('bitcoin-price');
+    if (!bitcoinPriceElement) return;
+
+    // Show loading state
+    bitcoinPriceElement.textContent = 'Loading...';
+
+    fetch('/api/crypto_price')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bitcoinPriceElement.textContent = `$${parseFloat(data.price).toFixed(2)}`;
+            } else {
+                bitcoinPriceElement.textContent = 'Error fetching price';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching Bitcoin price:', error);
+            bitcoinPriceElement.textContent = 'Error fetching price';
+        });
+}
+
+// Call the function on page load
+fetchBitcoinPrice();
+
+// Refresh Bitcoin price every 30 seconds
+setInterval(fetchBitcoinPrice, 30000);

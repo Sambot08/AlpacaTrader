@@ -11,6 +11,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 import dotenv
 import praw
+import requests
 
 # Load environment variables from .env file
 load_dotenv()
@@ -69,6 +70,10 @@ def init_trading_engine():
         
     # Ensure base_url does not end with a trailing slash
     base_url = base_url.rstrip('/')
+    
+    # Ensure base_url does not include '/v2'
+    if base_url.endswith('/v2'):
+        base_url = base_url[:-3]
     
     # Initialize components
     data_fetcher = AlpacaDataFetcher(api_key, api_secret, base_url)
@@ -719,6 +724,23 @@ def get_social_sentiment():
     except Exception as e:
         logger.error(f"Error fetching social sentiment data: {str(e)}")
         return jsonify({"success": False, "message": "An error occurred while fetching sentiment data"}), 500
+
+@app.route('/api/crypto_price', methods=['GET'])
+def get_crypto_price():
+    """Fetch live cryptocurrency price for Bitcoin (BTCUSD)."""
+    try:
+        base_url = os.environ.get("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
+        api_url = f"{base_url}/v1/crypto/BTCUSD/quote"
+        response = requests.get(api_url, headers={"APCA-API-KEY-ID": os.environ.get("ALPACA_API_KEY"), "APCA-API-SECRET-KEY": os.environ.get("ALPACA_API_SECRET")})
+        response.raise_for_status()
+        data = response.json()
+        return jsonify({
+            "success": True,
+            "price": data.get("ask_price", "N/A")
+        })
+    except Exception as e:
+        logger.error(f"Error fetching Bitcoin price: {str(e)}")
+        return jsonify({"success": False, "message": str(e)})
 
 # Initialize the database and trading engine
 with app.app_context():

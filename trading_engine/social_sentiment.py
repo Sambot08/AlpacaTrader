@@ -247,19 +247,23 @@ class SocialSentimentAnalyzer:
         Fetch posts from Reddit containing the symbol using Reddit API
         """
         try:
-            # Replace with actual Reddit API integration
+            # Use the base URL from the environment variable
+            base_url = os.environ.get("REDDIT_API_BASE_URL", "https://www.reddit.com")
+
+            # Construct the API URL dynamically
+            api_url = f"{base_url}/r/{subreddit}/search.json"
+
             headers = {
                 'User-Agent': 'AlpacaTrader/1.0',
                 'Authorization': f'Bearer {os.getenv("REDDIT_API_TOKEN")}'
             }
-            base_url = f'https://www.reddit.com/r/{subreddit}/search.json'
             params = {
                 'q': symbol,
                 'restrict_sr': True,
                 'sort': 'new',
                 'limit': 100
             }
-            response = requests.get(base_url, headers=headers, params=params)
+            response = requests.get(api_url, headers=headers, params=params)
             response.raise_for_status()
             data = response.json()
 

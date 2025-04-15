@@ -22,50 +22,54 @@ if __name__ == "__main__":
     else:
         logging.info("Trading engine initialized successfully.")
 
-    # Example stock symbol to analyze
-    stock_symbol = "AAPL"
+    # Example cryptocurrency symbol to analyze
+    crypto_symbol = "BTCUSD"
 
     # Initialize the social sentiment analyzer
     social_analyzer = SocialSentimentAnalyzer()
 
-    # Fetch social sentiment for the stock
+    # Fetch social sentiment for the cryptocurrency
     try:
-        reddit_sentiment = social_analyzer.get_reddit_sentiment([stock_symbol])
-        stocktwits_sentiment = social_analyzer.get_stocktwits_sentiment([stock_symbol])
-        combined_sentiment = social_analyzer.get_combined_sentiment([stock_symbol])
+        reddit_sentiment = social_analyzer.get_reddit_sentiment([crypto_symbol])
+        stocktwits_sentiment = social_analyzer.get_stocktwits_sentiment([crypto_symbol])
+        combined_sentiment = social_analyzer.get_combined_sentiment([crypto_symbol])
 
-        logging.info(f"Social Sentiment for {stock_symbol}: ")
-        logging.info(f"Reddit Sentiment: {reddit_sentiment.get(stock_symbol, 'N/A')}")
-        logging.info(f"StockTwits Sentiment: {stocktwits_sentiment.get(stock_symbol, 'N/A')}")
-        logging.info(f"Combined Sentiment: {combined_sentiment.get(stock_symbol, 'N/A')}")
+        logging.info(f"Social Sentiment for {crypto_symbol}: ")
+        logging.info(f"Reddit Sentiment: {reddit_sentiment.get(crypto_symbol, 'N/A')}")
+        logging.info(f"StockTwits Sentiment: {stocktwits_sentiment.get(crypto_symbol, 'N/A')}")
+        logging.info(f"Combined Sentiment: {combined_sentiment.get(crypto_symbol, 'N/A')}")
     except Exception as e:
-        logging.error(f"Error fetching social sentiment for {stock_symbol}: {str(e)}")
+        logging.error(f"Error fetching social sentiment for {crypto_symbol}: {str(e)}")
 
-    # Function to fetch live stock price
-    def fetch_live_stock_price(symbol):
+    # Function to fetch live cryptocurrency price
+    def fetch_live_crypto_price(symbol):
         try:
-            api_url = f"https://data.alpaca.markets/v2/stocks/{symbol}/quote"  # Updated to Alpaca's real API endpoint
+            # Use the base URL from the environment variable
+            base_url = os.environ.get("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
+
+            # Update the API URL to use the base URL dynamically
+            api_url = f"{base_url}/v1/crypto/{symbol}/quote"
             response = requests.get(api_url)
             response.raise_for_status()
             data = response.json()
             return data.get("latestPrice", "N/A")
         except Exception as e:
-            logging.error(f"Error fetching live stock price for {symbol}: {str(e)}")
+            logging.error(f"Error fetching live cryptocurrency price for {symbol}: {str(e)}")
             return "Error"
 
-    # Fetch and log live stock price for the selected stock
+    # Fetch and log live cryptocurrency price for the selected cryptocurrency
     try:
-        live_price = fetch_live_stock_price(stock_symbol)
-        logging.info(f"Live Stock Price for {stock_symbol}: {live_price}")
+        live_price = fetch_live_crypto_price(crypto_symbol)
+        logging.info(f"Live Cryptocurrency Price for {crypto_symbol}: {live_price}")
     except Exception as e:
-        logging.error(f"Error fetching live stock price: {str(e)}")
+        logging.error(f"Error fetching live cryptocurrency price: {str(e)}")
 
     # Initialize the scheduler
     scheduler = BackgroundScheduler()
 
     # Define the periodic task to refresh sentiment data
     def refresh_sentiment_task():
-        symbols = ["AAPL", "TSLA", "AMZN"]  # Add more symbols as needed
+        symbols = ["BTCUSD", "ETHUSD"]  # Add more cryptocurrency symbols as needed
         social_analyzer.refresh_sentiment_data(symbols)
 
     # Schedule the task to run every 5 minutes
